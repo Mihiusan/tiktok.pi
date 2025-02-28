@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi SDK Test</title>
+</head>
+<body>
+    <div id="auth-status">Authenticating...</div>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+        Pi.init({ version: "2.0" });
+        Pi.authenticate(['username'])
+            .then(function(auth) {
+                document.getElementById('auth-status').innerText = 
+                    `Success! Welcome, ${auth.user.username}`;
+            })
+            .catch(function(error) {
+                document.getElementById('auth-status').innerText = 
+                    `Error: ${error.message}`;
+            });
+    </script>
+</body>
+</html>
