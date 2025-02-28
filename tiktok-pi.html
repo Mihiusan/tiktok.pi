@@ -3,137 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok-like Script for Pi Network</title>
+    <title>TikTok on Pi Network</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f0f0f0;
-        }
-        .video-item {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        video {
-            max-width: 100%;
-            height: auto;
-        }
-        button {
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #status {
-            margin-top: 10px;
-            color: #333;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #status { margin-top: 10px; color: red; }
     </style>
 </head>
 <body>
     <h1>TikTok on Pi Network</h1>
     <div id="auth-status">Authenticating...</div>
-    <div id="video-feed" style="display: none;">
-        <!-- Video feed will be populated here -->
-    </div>
     <div id="status"></div>
 
-    <!-- Include Pi SDK -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script>
+        // Update status on the page
+        function updateStatus(message) {
+            document.getElementById('status').innerText = message;
+        }
+
         // Initialize Pi SDK
-        Pi.init({ version: "2.0" });
+        updateStatus("Initializing Pi SDK...");
+        try {
+            Pi.init({ version: "2.0" });
+            updateStatus("Pi SDK initialized. Attempting authentication...");
+        } catch (e) {
+            updateStatus("Pi SDK init failed: " + e.message);
+            return;
+        }
 
-        // Mock video data (replace with real URLs or fetch from a server in a full app)
-        const videos = [
-            { id: "video1", title: "Dance Challenge", url: "https://example.com/video1.mp4", creator: "user1" },
-            { id: "video2", title: "Funny Clip", url: "https://example.com/video2.mp4", creator: "user2" },
-            { id: "video3", title: "Singing Cover", url: "https://example.com/video3.mp4", creator: "user3" }
-        ];
-
-        // Function to handle incomplete payments (required by Pi SDK)
+        // Handle incomplete payments
         function onIncompletePaymentFound(payment) {
-            console.log("Incomplete payment found:", payment);
-            // In a real app, notify the server to check payment status
+            updateStatus("Incomplete payment found: " + payment.identifier);
             return { paymentId: payment.identifier };
         }
 
-        // Authenticate user with Pi Network
-        Pi.authenticate(['username', 'payments'], onIncompletePaymentFound)
-            .then(function(auth) {
-                document.getElementById('auth-status').innerText = 
-                    `Welcome, ${auth.user.username}! Enjoy the video feed.`;
-                displayVideoFeed();
-            })
-            .catch(function(error) {
-                document.getElementById('auth-status').innerText = 
-                    "Authentication failed. Please try again in the Pi Browser.";
-                console.error("Authentication error:", error);
-            });
-
-        // Display the video feed
-        function displayVideoFeed() {
-            const feed = document.getElementById('video-feed');
-            feed.style.display = 'block';
-            feed.innerHTML = ''; // Clear any existing content
-
-            videos.forEach(video => {
-                const videoDiv = document.createElement('div');
-                videoDiv.className = 'video-item';
-                videoDiv.innerHTML = `
-                    <h3>${video.title} by ${video.creator}</h3>
-                    <video src="${video.url}" controls></video>
-                    <br>
-                    <button onclick="likeVideo('${video.id}', '${video.creator}')">Like & Tip</button>
-                `;
-                feed.appendChild(videoDiv);
-            });
-        }
-
-        // Handle liking a video and tipping the creator
-        function likeVideo(videoId, creator) {
-            if (confirm(`Tip 0.01 Pi to ${creator} for this video?`)) {
-                const paymentData = {
-                    amount: 0.01,           // Amount in Pi
-                    memo: `Tip for ${videoId}`, // Description
-                    metadata: { videoId: videoId, creator: creator } // Custom data
-                };
-
-                const callbacks = {
-                    onReadyForServerApproval: function(paymentId) {
-                        // In a real app, send paymentId to your server for approval
-                        console.log(`Payment ${paymentId} ready for server approval`);
-                        // Simulate server approval for demo
-                        setTimeout(() => {
-                            document.getElementById('status').innerText = 
-                                `Tip of 0.01 Pi sent to ${creator} for ${videoId}!`;
-                        }, 1000);
-                    },
-                    onReadyForClientApproval: function(paymentId) {
-                        console.log(`Payment ${paymentId} approved by client`);
-                    },
-                    onCancel: function(paymentId) {
-                        document.getElementById('status').innerText = "Payment cancelled.";
-                        console.log(`Payment ${paymentId} cancelled`);
-                    },
-                    onError: function(error, paymentId) {
-                        document.getElementById('status').innerText = "Payment failed.";
-                        console.error("Payment error:", error);
-                    }
-                };
-
-                Pi.createPayment(paymentData, callbacks);
-            } else {
-                document.getElementById('status').innerText = "Tip cancelled.";
-            }
+        // Authenticate
+        try {
+            Pi.authenticate(['username', 'payments'], onIncompletePaymentFound)
+                .then(function(auth) {
+                    document.getElementById('auth-status').innerText = 
+                        `Welcome, ${auth.user.username}!`;
+                    updateStatus("Authentication successful!");
+                })
+                .catch(function(error) {
+                    updateStatus("Authentication failed: " + (error.message || "Unknown error"));
+                });
+        } catch (e) {
+            updateStatus("Authentication call failed: " + e.message);
         }
     </script>
 </body>
